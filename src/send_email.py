@@ -1,9 +1,10 @@
 from src.crypto import Encript
 import zipfile
 import os
+from hashlib import md5
 import glob
 
-def menu():
+def send_menu():
     print("Digite a mensagem que deseja enviar")
     msg = raw_input()
 
@@ -24,4 +25,4 @@ def menu():
 
 
 if __name__ == "__main__":
-    menu()
+    send_menu()
