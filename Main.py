@@ -1,8 +1,11 @@
 # -*- coding:utf-8 -*-
 from getpass import getpass
 from src.User import User
+from src.crypto import Encript
 from src import send_email
+from Crypto.PublicKey import RSA
 import os
+import glob
 import pickle
 
 def read_register():
@@ -49,9 +52,12 @@ def register():
     write_register(user)
 
     userfolder = 'users_folders/'+user.username
-    os.mkdir(userfolder)
-    os.mkdir(userfolder + '/' + 'sent')
-    os.mkdir(userfolder + '/' + 'received')
+    if not os.path.isdir(userfolder):
+        os.mkdir(userfolder)
+    if not os.path.isdir(userfolder + '/' + 'sent'):
+        os.mkdir(userfolder + '/' + 'sent')
+    if not os.path.isdir(userfolder + '/' + 'received'):
+        os.mkdir(userfolder + '/' + 'received')
 
 
 def menu():
@@ -80,16 +86,51 @@ def login():
         else:
             break
 
-    print()
+    print('\n')
     print('1 - Criar E-Mail')
     print('2 - Ler E-Mail')
     opc = raw_input('O que deseja fazer? ')
 
-    if opc == 1:
-        send_email.send_menu()
+    if opc == '1':
+        while True:
+            dest = raw_input("Destinatário: ")
+            if dest not in read_register()[0]:
+                print('Destinatário não registrado. Tente novamente...')
+            else:
+                break
 
+        private_key_arq_send = send_email.send_menu(user, dest)
+        with open('users_folders/'+dest+'/received/key.arq', 'w') as f:
+            public_key_dest = read_register()[0][dest]
+            K = RSA.importKey(public_key_dest)
+            enc = K.encrypt(private_key_arq_send, 0)
+            f.write(enc[0])
 
+        with open('users_folders/'+dest+'/received/sender.publickey', 'w') as f:
+            f.write(user.get_public_key())
 
+    if opc == '2':
+
+        if len(glob.glob('users_folders/'+user.username+'/received/*')) == 0:
+            print('Nenhuma mensagem para ler...')
+        else:
+            with open('users_folders/'+user.username+'/received/sender.publickey') as sp:
+                sender_publickkey = sp.read()
+
+            K_sender = RSA.importKey(sender_publickkey)
+
+            with open('users_folders/'+user.username+'/received/hash.arq') as h:
+                hash_message = K_sender.decrypt(h.read())
+
+            K_user = RSA.importKey(user.get_private_key())
+            with open('users_folders/'+user.username+'/received/key.arq') as k:
+                key_message = K_user.decrypt(k.read())
+
+            ENC = Encript()
+            message = ENC.decrypt_file(None, key_message, 'users_folders/'+user.username+'/received/msg.arq', 'users_folders/'+user.username+'/received/msg.zip')
+
+            print('Hash da menssagem recebida: %s' % hash_message)
+            print('O arquivo com a mensagem foi salvo na SUA pasta received!!!')
 
 
 

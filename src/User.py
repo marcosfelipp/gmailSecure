@@ -21,7 +21,7 @@ class User:
         key = RSA.importKey(exportedKey)
         keyexportkey = key.exportKey()
         del key # forçar exclusão
-        return keyexportkey # Binary String
+        return exportedKey # Binary String
 
     def get_public_key(self, password=None):
         password = self.password if password is None else password
